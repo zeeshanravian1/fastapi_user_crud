@@ -1,145 +1,140 @@
 """
-    Main file for the project
+    Main file for project
 
     Description:
-        This program is the main file for the project.
-        It is the entry point for the program.
-        It is the file that is run when the program is started.
+    - This program is main file for project.
+    - It is used to create FastAPI object and add all routes to it.
 
 """
 
-# Importing Python packages
-import logging
+# Importing Python Packages
 
-# Importing FastAPI packages
-from fastapi import FastAPI
-from fastapi.security import OAuth2PasswordBearer
+# Importing FastAPI Packages
+from fastapi import FastAPI, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
-from fastapi_pagination import add_pagination
 
-
-# Importing from project files
-from core.models.database import database
-from dependencies import (
-    CORS_ALLOW_ORIGINS,
-    CORS_ALLOW_METHODS,
-    CORS_ALLOW_HEADERS,
+# Importing Project Files
+from core import (
+    core_configuration,
+    custom_generate_unique_id,
+    exception_handling,
+    router,
 )
-from routers import usr_route
 
 
 # Router Object to Create Routes
 app = FastAPI(
-    docs_url=None,
-    redoc_url=None,
-    title="User CRUD Project",
-    description="User CRUD Project Documentation",
-    version="0.1a",
+    docs_url=core_configuration.DOCS_URL,
+    redoc_url=core_configuration.REDOC_URL,
+    generate_unique_id_function=custom_generate_unique_id,
+    title=core_configuration.PROJECT_TITLE,
+    description=core_configuration.PROJECT_DESCRIPTION,
+    version=core_configuration.VERSION,
 )
 
 
 # -----------------------------------------------------------------------------
 
 
-logger = logging.getLogger("main-logger")
-
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[CORS_ALLOW_ORIGINS],
     allow_credentials=True,
-    allow_methods=[CORS_ALLOW_METHODS],
-    allow_headers=[CORS_ALLOW_HEADERS],
+    allow_origins=[core_configuration.CORS_ALLOW_ORIGINS],
+    allow_methods=[core_configuration.CORS_ALLOW_METHODS],
+    allow_headers=[core_configuration.CORS_ALLOW_HEADERS],
 )
 
 
-@app.on_event("startup")
-async def startup():
+# Custom http middleware
+app.middleware(middleware_type="http")(exception_handling)
+
+
+@app.get(
+    path="/",
+    status_code=status.HTTP_200_OK,
+    summary="Home page",
+    description="This function is used to create root route.",
+    response_description="Home page",
+    include_in_schema=False,
+    tags=["Root"],
+)
+async def root():
     """
-    Startup event
+    Root
 
     Description:
-        This function is called when the program starts.
-        It is used to connect to the database.
+    - This function is used to create root route.
 
-    Parameters:
-        None
+    Parameter:
+    - **None**
 
-    Returns:
-        None
-
-    """
-
-    await database.connect()
-    logger.info("Server Startup")
-
-
-@app.on_event("shutdown")
-async def shutdown():
-    """
-    Shutdown event
-
-        Description:
-            This function is called when the program is closed.
-            It is used to disconnect from the database.
-
-        Parameters:
-            None
-
-        Returns:
-            None
+    Return:
+    - **None**
 
     """
 
-    await database.disconnect()
-    logger.info("Server Shutdown")
+    return {"message": f"Welcome to {core_configuration.PROJECT_TITLE}"}
 
 
-@app.get("/docs", include_in_schema=False)
+@app.get(
+    path=f"{core_configuration.DOCS_URL}",
+    status_code=status.HTTP_200_OK,
+    summary="Swagger UI",
+    description="This function is used to create swagger UI route.",
+    response_description="Swagger UI",
+    include_in_schema=False,
+    tags=["Documentation"],
+)
 async def custom_swagger_ui_html():
     """
     Custom Swagger UI HTML
 
     Description:
-        This function is used to create a custom swagger UI HTML page.
+    - This function is used to create a custom swagger UI HTML page.
 
-    Parameters:
-        None
+    Parameter:
+    - **None**
 
-    Returns:
-        None
+    Return:
+    - **None**
 
     """
 
     return get_swagger_ui_html(
         openapi_url=app.openapi_url,
-        title=app.title + " ",
-        swagger_favicon_url="",
+        title=app.title + " - Swagger UI",
         oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
         swagger_js_url="/static/swagger-ui-bundle.js",
         swagger_css_url="/static/swagger-ui.css",
     )
 
 
-@app.get("/redoc", include_in_schema=False)
+@app.get(
+    path=f"{core_configuration.REDOC_URL}",
+    status_code=status.HTTP_200_OK,
+    summary="Redoc UI",
+    description="This function is used to create redoc UI route.",
+    response_description="Redoc UI",
+    include_in_schema=False,
+    tags=["Documentation"],
+)
 async def custom_redoc_ui_html():
     """
     Custom Redoc UI HTML
 
     Description:
-        This function is used to create a custom redoc UI HTML page.
+    - This function is used to create a custom redoc UI HTML page.
 
-    Parameters:
-        None
+    Parameter:
+    - **None**
 
-    Returns:
-        None
+    Return:
+    - **None**
 
     """
 
@@ -151,8 +146,4 @@ async def custom_redoc_ui_html():
 
 
 # Add all file routes to app
-app.include_router(usr_route.router)
-
-
-# Pagination
-add_pagination(app)
+app.include_router(router)

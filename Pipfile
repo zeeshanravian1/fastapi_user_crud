@@ -5,19 +5,22 @@ name = "pypi"
 
 [packages]
 fastapi = {extras = ["all"], version = "*"}
-fastapi-pagination = "*"
 fastapi-mail = "*"
+sqlalchemy = {extras = ["all"], version = "*"}
 alembic = "*"
-databases = "*"
-environs = "*"
 asyncpg = "*"
-psycopg2-binary = "*"
-passlib = "*"
 python-jose = "*"
+passlib = "*"
+langchain = "*"
+openai = "*"
 pytest = "*"
+pre-commit = "*"
 
 [dev-packages]
 autopep8 = "*"
+black = "*"
+ipykernel = "*"
+pylint = "*"
 
 [requires]
 python_version = "3.11"
